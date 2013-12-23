@@ -1,0 +1,96 @@
+server {
+	listen		80;
+	server_name	default;
+
+	access_log	/var/log/nginx/zoo_access.log	combined_w_req_time;
+	error_log	/var/log/nginx/zoo_error.log;
+
+	auth_basic		"Restricted";
+	auth_basic_user_file	/etc/nginx/htpasswd;
+
+	client_max_body_size 5M;
+
+	set $original_scheme $scheme;
+	if ($http_x_forwarded_proto) {
+		set $original_scheme $http_x_forwarded_proto;
+	}
+
+	set $rewritten_host $host;
+	# from: http://www.xormedia.com/django-allowed-hosts-and-amazon-elastic-load-balancer/
+	# if the host header is an ip address change it to www.mysite.com
+	# this works around requests coming from ELB with either the instance's
+	# internal ip address in the case of health checks or an unknown internal
+	# ip address in the case of latency checks. translating them to a known
+	# good host header makes django's ALLOWED_HOSTS happy
+	set $check "";
+	if ($http_user_agent ~ ^ELB\-HealthChecker) {
+		set $check "ELB";
+	}
+	if ($host ~ "\d+\.\d+\.\d+\.\d+") {
+		set $check "${check}_YESIP";
+	}
+	if ($check = "ELB_YESIP") {
+		set $rewritten_host "staging.servers.thezebra.com";
+	}
+
+    location @maintenance {
+            root /web/zoo/deployment/web/www;
+    }
+
+    location = /index.html {
+            root /web/zoo/deployment/web/www;
+    }
+
+	location / {
+        error_page 503 @maintenance;
+        if (-f /web/zoo/deployment/web/www/index.html) {
+                return 503;
+        }
+
+		proxy_pass http://127.0.0.1:8100;
+		proxy_redirect off;
+		proxy_set_header Host $rewritten_host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $original_scheme;
+	}
+}
+
+server {
+	listen		127.0.0.1:8100;
+	server_name	default;
+
+	## Static
+	gzip            on;
+	gzip_types      text/css application/x-javascript text/javascript text/xml;
+	gzip_min_length 1300; # if it fits in one packet don't compress
+	
+	client_max_body_size 5M;
+
+	location / {
+		set $uwsgi_script "zoo.wsgi";
+		set $script_name "/";
+		set $socket "zoo-uwsgi.sock";
+		
+		#client_max_body_size 1000m;
+		access_log /var/log/nginx/zoo_django_access.log  combined_w_req_time_upstream;
+		error_log /var/log/nginx/zoo_django_error.log;
+		keepalive_timeout  0;
+		
+		# host and port to uwsgi server
+		uwsgi_pass   unix:///tmp/$socket;
+		uwsgi_param  UWSGI_SCRIPT $uwsgi_script;
+		uwsgi_param  SCRIPT_NAME $script_name;
+		
+		uwsgi_pass_header Authorization;
+		include /etc/nginx/uwsgi_params;
+		
+		# fix redirect issue to proxy port
+		uwsgi_param SERVER_PORT 80;
+		
+		# set correct scheme
+		uwsgi_param UWSGI_SCHEME $http_x_forwarded_proto;
+		
+		uwsgi_intercept_errors off;
+	}
+}
