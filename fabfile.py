@@ -21,7 +21,7 @@ env.roledefs = {
 # TODO: remove servers from the load balancer
 @task(default=True)
 @roles('zoo-staging')
-def deploy_staging(skip_pip=False):
+def deploy_zoo_staging(skip_pip=False):
     deploy_env('develop', 'zoo-staging-db-control', skip_pip)
     # only clear the cache when we're on the last host
     if env.host_string == env.all_hosts[-1]:

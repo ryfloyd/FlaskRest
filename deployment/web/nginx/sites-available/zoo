@@ -73,8 +73,8 @@ server {
 		set $socket "zoo-uwsgi.sock";
 		
 		#client_max_body_size 1000m;
-		access_log /var/log/nginx/zoo_django_access.log  combined_w_req_time_upstream;
-		error_log /var/log/nginx/zoo_django_error.log;
+		access_log /var/log/nginx/zoo_flask_access.log  combined_w_req_time_upstream;
+		error_log /var/log/nginx/zoo_flask_error.log;
 		keepalive_timeout  0;
 		
 		# host and port to uwsgi server
