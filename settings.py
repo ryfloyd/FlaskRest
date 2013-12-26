@@ -1,7 +1,7 @@
 import os
 
 # Determine if this is a dev, staging or prod env
-if not os.environ.get('EC2-ENV'):
+if not os.environ.get('EC2-ENV', False):
 	SERVER_NAME = '127.0.0.1:8100'
 	
 	MONGO_HOST = 'localhost'
@@ -25,34 +25,8 @@ elif os.environ['EC2-ENV'] == 'PROD':
 	MONGO_USERNAME = ''
 	MONGO_PASSWORD = ''
 	MONGO_DBNAME = 'zoo'
-
-# Enable reads (GET), inserts (POST) and DELETE for resources/collections
-# (if you omit this line, the API will default to ['GET'] and provide
-# read-only access to the endpoint).
-RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
-
-# Enable reads (GET), edits (PATCH), replacements (PUT) and deletes of
-# individual items  (defaults to read-only item access).
-ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
-
-test = {
-	'schema': {
-		'objectID': {
-			'type': 'string',
-			'minlength': 48,
-			'maxlength': 48,
-			'required': True,
-			'unique': True,
-		},
-		'last_modified': {
-			'type': 'datetime',
-		}
-	}
-}
-
-DOMAIN = {
-    'test': test,
-}
+else:
+	raise KeyError
 
 
 
