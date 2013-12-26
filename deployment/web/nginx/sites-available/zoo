@@ -68,7 +68,7 @@ server {
 	client_max_body_size 5M;
 
 	location / {
-		set $uwsgi_script "zoo.wsgi";
+		set $uwsgi_script "zoo";
 		set $script_name "/";
 		set $socket "zoo-uwsgi.sock";
 		
