@@ -1,0 +1,16 @@
+# current working Environment
+ENVIRONMENT_NAME = "Staging"
+
+PORT = 8100
+
+DEBUG = True
+
+USE_RELOADER = False
+
+MONGODB_SETTINGS = {
+    'DB': 'zoo',
+    'USERNAME': '',
+    'PASSWORD': '',
+    'HOST': 'db-server',
+    'PORT': 27017,
+}
